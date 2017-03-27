@@ -1,9 +1,9 @@
-from pyactor.context import set_context, create_host, sleep, serve_forever
+from pyactor.context import set_context, create_host, sleep, serve_forever, interval
 from pyactor.exceptions import TimeoutError
 
 
 class Tracker(object):
-    _tell = ['announce', 'test', 'get_swarms']
+    _tell = ['announce', 'init_start', 'check_peers']
     _ask = ['get_peers']
     _ref = ['announce']
     
@@ -11,9 +11,13 @@ class Tracker(object):
     def __init__(self):
         self.swarmList = {}
         self.ttl = 10
+        self.interval1 = None
 
-    def test(self, msg):
-        print msg
+    def init_start(self):
+        # Programamos el intervalo que comprobara el ttl de los peer's
+        # cada segundo
+        self.interval1 = interval(self.host, 1, self.proxy, 'check_peers')
+
 
     # Funcion 'announce' del Tracker
     def announce(self, torrent_hash, peer_ref):
@@ -38,19 +42,22 @@ class Tracker(object):
         if torrent_hash in self.swarmList:
             return self.swarmList[torrent_hash].keys()
 
-    def check_peers(selfself):
-        pass
+    # Funcion que s'encarga de comprobar el ttl de los peers
+    # y eliminar de cada swarm aquellos que no estan activos
+    def check_peers(self):
+        for swarm in self.swarmList:
+            if bool(self.swarmList[swarm]):
+                for peer in self.swarmList[swarm]:
+                    # Restamos el ttl una unidad
+                    self.swarmList[swarm][peer] -= 1
+                    if self.swarmList[swarm][peer] == 0:
+                        del self.swarmList[swarm][peer]
+                #print swarm
+            else:
+                # si el swarm no tiene peers lo eliminamos
+                #print 'el swarm \'' + swarm + '\' esta vacio'
+                del self.swarmList[swarm]
 
-    def get_swarms(self):
-        print self.swarmList
-
-
-class Peer(object):
-    _tell = ['send']
-    _ask = []
-
-    def send(self, trck):
-        trck.test('Hola desde peer')
 
 if __name__ == "__main__":
     # Inicializacion del contexto de la ejecucion del host
@@ -58,10 +65,12 @@ if __name__ == "__main__":
     set_context()
 
     # Creacion del host que engendra el tracker
-    h = create_host('http://127.0.0.1:1277/')
+    host = create_host('http://127.0.0.1:1277/')
 
     # Generacion del 'tracker'
-    tck = h.spawn('tracker', Tracker)
+    tracker = host.spawn('tracker', Tracker)
+
+    tracker.init_start()
     #print tck
 
     #print tck.get_peers('hash1')
