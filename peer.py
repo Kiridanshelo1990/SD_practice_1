@@ -4,7 +4,7 @@ from pyactor.exceptions import TimeoutError
 
 class Peer(object):
     _tell = ['announce_2_tracker', 'init_start', 'stop_interval', 'test']
-    _ask = []
+    _ask = ['get_peers']
     _ref = []
 
     # Inicializador de la/as instancia/as del Peer
