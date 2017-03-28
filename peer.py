@@ -29,6 +29,9 @@ class Peer(object):
     def test(self):
         print self.proxy
 
+	def get_peers(self):
+		pass
+
 
 if __name__ == "__main__":
     set_context()
