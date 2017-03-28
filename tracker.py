@@ -1,72 +1,42 @@
-from pyactor.context import set_context, create_host, sleep, serve_forever
+from pyactor.context import set_context, create_host, sleep, serve_forever, interval
 from pyactor.exceptions import TimeoutError
 
 
-class Tracker(object):
-    _tell = ['announce', 'test', 'get_swarms']
-    _ask = ['get_peers']
-    _ref = ['announce']
-    
-    # Inicializador de la instancia del Tracker
-    def __init__(self):
-        self.swarmList = {}
-        self.ttl = 10
-
-    def test(self, msg):
-        print msg
-
-    # Funcion 'announce' del Tracker
-    def announce(self, torrent_hash, peer_ref):
-        # Comprobamos si existe el swarm del torrent_hash
-        if torrent_hash in self.swarmList:
-            # Comprobamos si el peer existe en el swarm
-            if peer_ref in self.swarmList[torrent_hash]:
-                # Si existe le restauramos el ttl
-                self.swarmList[torrent_hash][peer_ref] = self.ttl
-
-                print 'Announce from: ' + peer_ref # -----DEBUGGING LINE-----
-            else:
-                self.swarmList[torrent_hash][peer_ref] = self.ttl
-        else:
-            # Sino existe el swarm lo creamos y incorporamos el peer
-            self.swarmList[torrent_hash] = {peer_ref: self.ttl}
-            #print self.swarmList
-
-
-    # Funcion 'get_peers'
-    def get_peers(self, torrent_hash):
-        if torrent_hash in self.swarmList:
-            return self.swarmList[torrent_hash].keys()
-
-    def check_peers(selfself):
-        pass
-
-    def get_swarms(self):
-        print self.swarmList
-
-
 class Peer(object):
-    _tell = ['send']
+    _tell = ['announce_2_tracker', 'init_start', 'stop_interval', 'test']
     _ask = []
+    _ref = []
 
-    def send(self, trck):
-        trck.test('Hola desde peer')
+    # Inicializador de la/as instancia/as del Peer
+    def __init__(self):
+        self.tracker = None
+        self.torrent_hash = None
+        self.interval1 = None
+
+    def init_start(self, tracker_proxy, torrent_hash):
+        self.tracker = tracker_proxy
+        self.torrent_hash = torrent_hash
+        self.interval1 = interval(self.host, 4, self.proxy, 'announce_2_tracker')
+
+    def announce_2_tracker(self):
+        if self.tracker and self.torrent_hash:
+            tracker.announce(self.torrent_hash, str(self.proxy))
+
+    def stop_interval(self):
+        print "stopping interval"
+        self.interval1.set()
+
+    def test(self):
+        print self.proxy
+
 
 if __name__ == "__main__":
-    # Inicializacion del contexto de la ejecucion del host
-    # Por defecto el tipo de threads son los threads clasicos de python
     set_context()
+    h = create_host('http://127.0.0.1:1679/')
 
-    # Creacion del host que engendra el tracker
-    h = create_host('http://127.0.0.1:1277/')
+    tracker = h.lookup_url('http://127.0.0.1:1277/tracker', 'Tracker', 'tracker')
 
-    # Generacion del 'tracker'
-    tck = h.spawn('tracker', Tracker)
-    #print tck
-
-    #print tck.get_peers('hash1')
-
-    #p1 = h.spawn('peer1', Peer)
-    #p1.send(tck)
+    p1 = h.spawn('peer1', Peer)
+    p1.init_start(tracker, 'hash_1')
 
     serve_forever()
