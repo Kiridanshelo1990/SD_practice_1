@@ -21,19 +21,19 @@ class Tracker(object):
 
     # Funcion 'announce' del Tracker
     def announce(self, torrent_hash, peer_ref):
-        # Comprobamos si existe el swarm del torrent_hash
-        if torrent_hash in self.swarmList:
+		# Comprobamos si existe el swarm del torrent_hash
+		if torrent_hash in self.swarmList:
             # Comprobamos si el peer existe en el swarm
-            if peer_ref in self.swarmList[torrent_hash]:
+			if peer_ref in self.swarmList[torrent_hash]:
                 # Si existe le restauramos el ttl
-                self.swarmList[torrent_hash][peer_ref] = self.ttl
+				self.swarmList[torrent_hash][peer_ref] = self.ttl
 
-                print 'Announce from: ' + peer_ref # -----DEBUGGING LINE-----
-            else:
-                self.swarmList[torrent_hash][peer_ref] = self.ttl
-        else:
+				print 'Announce from: ' + str(peer_ref)[23:27] # -----DEBUGGING LINE-----
+			else:
+				self.swarmList[torrent_hash][peer_ref] = self.ttl
+		else:
             # Sino existe el swarm lo creamos y incorporamos el peer
-            self.swarmList[torrent_hash] = {peer_ref: self.ttl}
+			self.swarmList[torrent_hash] = {peer_ref: self.ttl}
             #print self.swarmList
 
 

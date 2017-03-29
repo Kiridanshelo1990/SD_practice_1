@@ -1,11 +1,12 @@
 from pyactor.context import set_context, create_host, sleep, serve_forever, interval
 from pyactor.exceptions import TimeoutError
-
+import threading
+import sys
 
 class Peer(object):
-	_tell = ['announce_2_tracker', 'init_start', 'stop_interval', 'test', 'get_peers']
-	_ask = ['push']
-	_ref = []
+	_tell = ['announce_2_tracker', 'init_start', 'stop_interval', 'test', 'get_peers', 'push', 'pull']
+	_ask = []
+	_ref = ['announce_2_tracker', 'get_peers']
 
     # Inicializador de la/as instancia/as del Peer
 	def __init__(self):
@@ -16,6 +17,7 @@ class Peer(object):
 		self.keysList = {}
 		self.chunk_id = None
 		self.chunk_data = {}
+		self.id_list = [0,1,2,3,4,5,6,7,8,9]
 
 	# Programamos los intervalos de announce y get_peers en 9 y 2 segundos respectivamente
 	def init_start(self, tracker_proxy, torrent_hash):
@@ -27,7 +29,7 @@ class Peer(object):
 	# Si tenemos el tracker y el torrent_hash, hacemos el announce
 	def announce_2_tracker(self):
 		if self.tracker and self.torrent_hash:
-			tracker.announce(self.torrent_hash, str(self.proxy)[23:27])
+			tracker.announce(self.torrent_hash, self.proxy)
 
 	# Si tenemos el torrent_hash, hacemos el get_peers
 	def get_peers(self):
@@ -39,6 +41,17 @@ class Peer(object):
 		print "stopping interval"
 		self.interval1.set()
 		self.interval2.set()
+
+	def push(self, chunk_id, chunk_data):
+		self.chunk_data[chunk_id] = chunk_data
+
+	# Falta preguntar a varios peer
+	def pull(self):
+		for i in self.id_list:
+			try:
+				self.chunk_data[self.id_list[i]]
+			except LookupError:
+				peer.push(self.id_list[i])
 
 	# Intentamos acceder al dato registrado en la posicion chunk_id, si lo tenemos lo devolvemos, si no, devolvemos None
 	def push(self, chunk_id):
@@ -55,12 +68,18 @@ class Peer(object):
 
 
 if __name__ == "__main__":
-    set_context()
-    h = create_host('http://127.0.0.1:1679/')
+    if len(sys.argv) == 4:
+        host_port = sys.argv[1]
+        actor_id = sys.argv[2]
+        hash = sys.argv[3]
 
-    tracker = h.lookup_url('http://127.0.0.1:1277/tracker', 'Tracker', 'tracker')
-
-    p1 = h.spawn('peer1', Peer)
-    p1.init_start(tracker, 'hash_1')
-
-    serve_forever()
+        set_context()
+        h = create_host('http://127.0.0.1:' + host_port + '/')
+        print h
+        tracker = h.lookup_url('http://127.0.0.1:1277/tracker', 'Tracker', 'tracker')
+        p1 = h.spawn(actor_id, Peer)
+        print actor_id
+        p1.init_start(tracker, hash)
+        serve_forever()
+    else:
+        print 'Argument\'s number error to execute the peer'
