@@ -50,6 +50,7 @@ class Peer(object):
 		self.interval1 = interval(self.host, 7, self.proxy, 'announce_2_tracker')
 		self.interval2 = interval(self.host, 2, self.proxy, 'get_peers')
 		self.interval3 = interval(self.host, 1, self.proxy, 'push')
+		self.interval4 = interval(self.host, 1, self.proxy, 'pull')
 
 	# Metodo 'announce_2_tracker'
 	# Realiza el announce del peer hacia el tracker
@@ -81,14 +82,15 @@ class Peer(object):
 			self.available_chunks_id.append(chunk_id)
 			self.chunk_dic[chunk_id] = chunk_data
 		#elif True:
-			# ---- Debug's lines ---
+			 #---- Debug's lines ---
 			#if len(self.available_chunks_id) == 10:
-			#    print self.id + " has got all chunks!"
-			#    print self.chunk_dic
+			    #print self.id + " has got all chunks!"
+			    #print self.chunk_dic
 			#else:
-			#    print self.id + " has got " + str(len(self.available_chunks_id)) + " chunks"
+			    #print self.id + " has got " + str(len(self.available_chunks_id)) + " chunks"
 
 	def pull(self):
+		self.not_available_chunks_id = []
 		for i in self.id_list:
 			chunk_id = self.id_list[i]
 			if chunk_id not in self.available_chunks_id:
@@ -97,10 +99,12 @@ class Peer(object):
 		if num_not_available_chunk:
 			for peer in self.peer_list:
 				chunk_2_pull = self.not_available_chunks_id[random.randrange(num_not_available_chunk)]
-				chunk_data = peer.send_pull(chunk_2_pull)
-				if chunk_data != None:
-					self.available_chunks_id.append(chunk_2_pull)
-					self.chunk_dic[chunk_2_pull] = chunk_data
+				chunk_data = peer.send_pull(chunk_2_pull, future=True)
+				sleep(1)
+				if chunk_data.done():
+					if chunk_data.result() != None:
+						self.available_chunks_id.append(chunk_2_pull)
+						self.chunk_dic[chunk_2_pull] = chunk_data.result()
 
 	def send_pull(self, chunk_id):
 		try:
@@ -130,8 +134,6 @@ if __name__ == "__main__":
 		p1 = h.spawn(actor_id, Peer)
 		print actor_id + " spawned"
 		p1.init_start(tracker, hash, seeder)
-		sleep(5)
-		p1.pull()
 		serve_forever()
 	else:
 		print 'Argument\'s number error to execute the peer'

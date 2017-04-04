@@ -78,7 +78,7 @@ class Tracker(object):
                     if self.swarmDic[swarm][peer][1] != 0:
                         temp_dic[peer] = self.swarmDic[swarm][peer]
                     else:
-                        print str(peer) + " removed form the swarm"
+                        print str(peer) + " removed from the swarm"
                 self.swarmDic[swarm] = temp_dic
                 #print self.swarmDic[swarm]
             else:
