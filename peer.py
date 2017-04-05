@@ -38,7 +38,7 @@ class Peer(object):
 		self.tracker = tracker_proxy
 		self.torrent_hash = torrent_hash
 
-		# Si el peer es el seeder inicializamos  las variables chunk_dic y available_chunks_id.append
+		# Si el peer es el seeder inicializamos  las variables chunk_dic y available_chunks_id
 		if seeder:
 			id = 0
 			for letter in 'HELLOWORLD':
@@ -46,10 +46,16 @@ class Peer(object):
 				self.chunk_dic[id] = letter
 				id += 1
 
+		# Creamos una lista de los chunk_id que no tenemos
+		for i in self.id_list:
+			chunk_id = self.id_list[i]
+			if chunk_id not in self.available_chunks_id:
+				self.not_available_chunks_id.append(chunk_id)
+
 		# Inicialzamos los intervalos
 		self.interval1 = interval(self.host, 7, self.proxy, 'announce_2_tracker')
 		self.interval2 = interval(self.host, 2, self.proxy, 'get_peers')
-		self.interval3 = interval(self.host, 1, self.proxy, 'push')
+		#self.interval3 = interval(self.host, 1, self.proxy, 'push')
 		self.interval4 = interval(self.host, 1, self.proxy, 'pull')
 
 	# Metodo 'announce_2_tracker'
@@ -89,27 +95,34 @@ class Peer(object):
 			#else:
 			    #print self.id + " has got " + str(len(self.available_chunks_id)) + " chunks"
 
+	# Metodo 'pull'
+	# Realiza la peticion de los chunk_data a otros peer de forma aleatoria mediante la tecnica pull
 	def pull(self):
-		self.not_available_chunks_id = []
-		for i in self.id_list:
-			chunk_id = self.id_list[i]
-			if chunk_id not in self.available_chunks_id:
-				self.not_available_chunks_id.append(chunk_id)
 		num_not_available_chunk = len(self.not_available_chunks_id)
 		if num_not_available_chunk:
 			for peer in self.peer_list:
-				chunk_2_pull = self.not_available_chunks_id[random.randrange(num_not_available_chunk)]
-				chunk_data = peer.send_pull(chunk_2_pull, future=True)
-				sleep(1)
-				if chunk_data.done():
-					if chunk_data.result() != None:
-						self.available_chunks_id.append(chunk_2_pull)
-						self.chunk_dic[chunk_2_pull] = chunk_data.result()
+				if peer != self.proxy:
+					try:
+						chunk_2_pull = self.not_available_chunks_id[random.randrange(num_not_available_chunk)]
+						chunk_data = peer.send_pull(chunk_2_pull, future=True)
+						sleep (1)
+						if chunk_data.done():
+							if chunk_data.result() != None:
+								self.available_chunks_id.append(chunk_2_pull)
+								self.chunk_dic[chunk_2_pull] = chunk_data.result()
+								self.not_available_chunks_id.remove(chunk_2_pull)
+								print self.not_available_chunks_id
+					except:
+						pass
+		else:
+			self.interval4.set()
 
+	# Metodo 'send_pull'
+	# Retorna la chunk_data si esta disponible, si no, retorna None
 	def send_pull(self, chunk_id):
-		try:
+		if chunk_id in self.available_chunks_id:
 			return self.chunk_dic[chunk_id]
-		except LookupError:
+		else:
 			return None
 
 	# Stop de los intervalos del announce y el get_peers
