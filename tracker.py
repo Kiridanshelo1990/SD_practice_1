@@ -40,6 +40,8 @@ class Tracker(object):
     # Devuelve una lista de proxys de 3 peers aleatorios.
     # En caso de tener un numero de proxys menor o igual a 3, retorna los 3 disponibles.
     def get_peers(self, torrent_hash):
+        # n es el numero de peers a devolver
+        n = 2
         # Variable que contendra los proxies de los peers a devolver
         peers_2_return = []
         # Comprobamos que el swarm del torrent_hash existe
@@ -49,9 +51,9 @@ class Tracker(object):
             num_peers = len(self.swarmDic[torrent_hash])
 
             #  Caso en que haya mas de tres peers en el swarm
-            if num_peers > 3:
+            if num_peers > n:
                 random_nums = []
-                for i in range(3):
+                for i in range(n):
                     # Escogemos un numero aleatorio entre 0 y num_peers
                     random_num = random.randrange(num_peers)
                     # Comprobamos que no lo tengamos seleccionado
@@ -78,7 +80,7 @@ class Tracker(object):
                     if self.swarmDic[swarm][peer][1] != 0:
                         temp_dic[peer] = self.swarmDic[swarm][peer]
                     else:
-                        print str(peer) + " removed from the swarm"
+                        print str(peer) + " removed form the swarm"
                 self.swarmDic[swarm] = temp_dic
                 #print self.swarmDic[swarm]
             else:
